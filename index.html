@@ -74,7 +74,8 @@
     <h2>検知履歴</h2>
     <ul id="events"><li>まだ履歴はありません</li></ul>
   </div>
-  <p class="footnote">サーバーがチェックを実行し、空きが出た瞬間に macOS 通知が届きます。
+  <p class="footnote">○ = 空室あり、△ = 残りわずか、× = 満室。
+     サーバーがチェックを実行し、空きが出た瞬間に macOS 通知が届きます。
      このページを開いていなくても通知されます（app.py が起動している間）。
      空きセルをクリックすると予約ページを開きます。</p>
 </main>
@@ -83,7 +84,7 @@
 const API = location.protocol.startsWith("http") && location.port === "8787"
   ? "" : "http://localhost:8787";
 const WDAYS = ["日","月","火","水","木","金","土"];
-const SITE_ORDER = ["tomoekan", "toyokan"];
+const SITE_ORDER = ["tomoekan", "taishikan", "toyokan"];
 
 function calHtml(site) {
   let html = '<div class="cal">' + WDAYS.map(w => `<div class="wd">${w}</div>`).join("");

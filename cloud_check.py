@@ -3,15 +3,16 @@
 import os
 from datetime import datetime, timedelta, timezone
 
-from app import (TOMOEKAN_URL, TOYOKAN_URL, fetch, parse_tomoekan,
-                 parse_toyokan)
+from app import (TAISHIKAN_URL, TOMOEKAN_URL, TOYOKAN_URL, fetch,
+                 parse_taishikan, parse_tomoekan, parse_toyokan)
 
 JST = timezone(timedelta(hours=9))
 WDAYS = ["日", "月", "火", "水", "木", "金", "土"]
 
 SITES = [
-    ("トモエ館 本八合目", TOMOEKAN_URL, parse_tomoekan),
-    ("東洋館", TOYOKAN_URL, parse_toyokan),
+    ("トモエ館 本八合目", TOMOEKAN_URL, parse_tomoekan, "utf-8"),
+    ("太子館", TAISHIKAN_URL, parse_taishikan, "shift_jis"),
+    ("東洋館", TOYOKAN_URL, parse_toyokan, "utf-8"),
 ]
 
 
@@ -49,9 +50,9 @@ def calendar_html(dates, url):
 def main():
     now = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
     sections, all_avail = [], []
-    for name, url, parser in SITES:
+    for name, url, parser, enc in SITES:
         try:
-            dates = parser(fetch(url))
+            dates = parser(fetch(url, enc))
             err = None
         except Exception as e:
             dates, err = {}, str(e)
@@ -127,7 +128,8 @@ def main():
 {banner}
 {"".join(sections)}
 <p class="footnote">緑の日をタップすると予約ページが開きます。
-× = 満室。表示は自動チェック時点の状況で、予約時に埋まっている場合もあります。</p>
+○ = 空室あり、△ = 残りわずか、× = 満室。
+表示は自動チェック時点の状況で、予約時に埋まっている場合もあります。</p>
 </main>
 </body>
 </html>"""

@@ -24,6 +24,7 @@ PORT = int(os.environ.get("FUJI_PORT") or os.environ.get("PORT") or "8787")
 TARGET_MONTH = "2026-08"
 
 TOMOEKAN_URL = "https://tomoekan.com/8tomoekan-calender/?ct=1785542400"
+TAISHIKAN_URL = "https://www.tenawan.ne.jp/lodgment/rec/007/617/pcr.asp"
 TOYOKAN_URL = (
     "https://www.489pro.com/asp/489/date.asp?id=19000037&group=&plan=17&room=6"
     "&year=2026&month=8&user_num=1&lan=JPN&ty=lim&mo=0&meal=0&m_menu=1&m_date=1"
@@ -42,6 +43,8 @@ state = {
     "sites": {
         "tomoekan": {"name": "トモエ館 本八合目", "url": TOMOEKAN_URL,
                      "dates": {}, "error": None},
+        "taishikan": {"name": "太子館", "url": TAISHIKAN_URL,
+                      "dates": {}, "error": None},
         "toyokan": {"name": "東洋館", "url": TOYOKAN_URL,
                     "dates": {}, "error": None},
     },
@@ -49,10 +52,10 @@ state = {
 }
 
 
-def fetch(url):
+def fetch(url, encoding="utf-8"):
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=30) as res:
-        return res.read().decode("utf-8", errors="replace")
+        return res.read().decode(encoding, errors="replace")
 
 
 def strip_tags(s):
@@ -111,6 +114,39 @@ def parse_toyokan(html):
     return dates
 
 
+TAISHIKAN_ROOMS = ["相部屋", "2人用小部屋", "3人用小部屋", "4人用小部屋"]
+TAISHIKAN_OK_MARKS = ("○", "◯", "〇", "△")
+
+
+def parse_taishikan(html):
+    """8月テーブルの日別×部屋タイプ別マーク。○/△ = 空きあり(△は残りわずか)。"""
+    start, end = html.find("8月"), html.find("9月")
+    if start < 0 or end < 0:
+        raise ValueError("8月のカレンダーが見つかりません(ページ構造変更の可能性)")
+    dates = {}
+    for m in re.finditer(
+        r"<b>(\d{1,2})</b>.*?<div class=\"roomtbl\">\s*<table>(.*?)</table>",
+        html[start:end], re.S,
+    ):
+        day, tbl = int(m.group(1)), m.group(2)
+        marks = [strip_tags(c) for c in
+                 re.findall(r'<td class="tdc\d">(.*?)</td>', tbl, re.S)]
+        rooms = [{"name": name, "mark": mark or "?",
+                  "available": mark in TAISHIKAN_OK_MARKS or mark.isdigit()}
+                 for name, mark in zip(TAISHIKAN_ROOMS, marks)]
+        if not rooms:
+            continue
+        ok_marks = {r["mark"] for r in rooms if r["available"]}
+        dates[f"{TARGET_MONTH}-{day:02d}"] = {
+            "available": bool(ok_marks),
+            "mark": "○" if "○" in ok_marks else ("△" if ok_marks else "×"),
+            "rooms": rooms,
+        }
+    if not dates:
+        raise ValueError("日付セルを1件も解析できませんでした(ページ構造変更の可能性)")
+    return dates
+
+
 def notify_mac(title, message):
     try:
         subprocess.run(
@@ -126,12 +162,13 @@ def notify_mac(title, message):
 def run_check():
     """両サイトをチェックし、新たに空きが出た日付があれば通知する。"""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    parsers = {"tomoekan": (TOMOEKAN_URL, parse_tomoekan),
-               "toyokan": (TOYOKAN_URL, parse_toyokan)}
+    parsers = {"tomoekan": (TOMOEKAN_URL, parse_tomoekan, "utf-8"),
+               "taishikan": (TAISHIKAN_URL, parse_taishikan, "shift_jis"),
+               "toyokan": (TOYOKAN_URL, parse_toyokan, "utf-8")}
     results = {}
-    for key, (url, parser) in parsers.items():
+    for key, (url, parser, enc) in parsers.items():
         try:
-            results[key] = {"dates": parser(fetch(url)), "error": None}
+            results[key] = {"dates": parser(fetch(url, enc)), "error": None}
         except Exception as e:
             results[key] = {"dates": None, "error": str(e)}
             print(f"[error] {key}: {e}")
