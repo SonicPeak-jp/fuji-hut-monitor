@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-"""GitHub Actions 用: 1回チェックして静的ページ(_site/index.html)を生成する。"""
+"""GitHub Actions 用: 1回チェックして静的ページ(_site/index.html)を生成する。
+
+前回結果(公開中の status.json)と比較し、新たに空きが出た場合は
+GITHUB_OUTPUT の `new` に書き出す(ワークフローがIssue作成→メール通知)。
+"""
+import json
 import os
+import urllib.request
 from datetime import datetime, timedelta, timezone
 
 from app import (TAISHIKAN_URL, TOMOEKAN_URL, TOYOKAN_URL, fetch,
                  parse_taishikan, parse_tomoekan, parse_toyokan)
+
+STATUS_URL = "https://sonicpeak-jp.github.io/fuji-hut-monitor/status.json"
 
 JST = timezone(timedelta(hours=9))
 WDAYS = ["日", "月", "火", "水", "木", "金", "土"]
@@ -45,6 +53,15 @@ def calendar_html(dates, url):
                        f'<div class="mark">{mark}</div></div>')
     out.append("</div>")
     return "".join(out)
+
+
+def load_previous():
+    """前回デプロイ時の空き一覧。取得できなければ None(=全件を新規扱い)。"""
+    try:
+        with urllib.request.urlopen(STATUS_URL, timeout=15) as r:
+            return set(json.load(r)["available"])
+    except Exception:
+        return None
 
 
 def main():
@@ -136,7 +153,17 @@ def main():
     os.makedirs("_site", exist_ok=True)
     with open("_site/index.html", "w") as f:
         f.write(html)
-    print(f"generated _site/index.html ({now}) avail={all_avail or 'なし'}")
+    with open("_site/status.json", "w") as f:
+        json.dump({"available": all_avail, "checked": now}, f, ensure_ascii=False)
+
+    prev = load_previous()
+    new_items = [a for a in all_avail if prev is None or a not in prev]
+    gh_out = os.environ.get("GITHUB_OUTPUT")
+    if gh_out:
+        with open(gh_out, "a") as f:
+            f.write("new=" + "、".join(new_items) + "\n")
+    print(f"generated _site/index.html ({now}) avail={all_avail or 'なし'} "
+          f"new={new_items or 'なし'}")
 
 
 if __name__ == "__main__":
