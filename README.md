@@ -1,5 +1,11 @@
 # 🗻 富士山山小屋 空き状況モニター
 
+**公開ページ（誰でも閲覧可）**: https://sonicpeak-jp.github.io/fuji-hut-monitor/
+
+GitHub Actions が30分ごとに空き状況をチェックして上記ページを自動更新します
+（`.github/workflows/check.yml` + `cloud_check.py`）。
+以下はローカル版（macOS通知つき）の説明です。
+
 トモエ館（本八合目）と東洋館の **2026年8月** の空き状況を30分ごとに自動チェックし、
 空きが出た瞬間に **macOS通知（サウンド付き）** でお知らせします。
 
