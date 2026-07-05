@@ -42,4 +42,4 @@ jobs:
         run: |
           gh issue create --repo "${{ github.repository }}" \
             --title "🗻🎉 山小屋に空きが出ました: ${NEW_AVAIL}" \
-            --body "$(printf '新たに空きを検知しました: %s\n\n- 空き状況ページ: https://sonicpeak-jp.github.io/fuji-hut-monitor/\n- トモエ館 予約: https://tomoekan.com/8tomoekan-calender/?ct=1785542400\n- 太子館 予約: https://www.tenawan.ne.jp/lodgment/rec/007/617/pcr.asp\n- 東洋館 予約: https://www.489pro.com/asp/489/menu.asp?id=19000037\n\n△は残りわずかです。お早めに！' "${NEW_AVAIL}")"
+            --body "$(printf '@SonicPeak-jp 新たに空きを検知しました: %s\n\n- 空き状況ページ: https://sonicpeak-jp.github.io/fuji-hut-monitor/\n- トモエ館 予約: https://tomoekan.com/8tomoekan-calender/?ct=1785542400\n- 太子館 予約: https://www.tenawan.ne.jp/lodgment/rec/007/617/pcr.asp\n- 東洋館 予約: https://www.489pro.com/asp/489/menu.asp?id=19000037\n\n△は残りわずかです。お早めに！' "${NEW_AVAIL}")"

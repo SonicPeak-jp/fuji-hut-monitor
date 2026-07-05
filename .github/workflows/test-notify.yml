@@ -1,0 +1,19 @@
+name: 通知テスト
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  test-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: テスト用Issueを作成(メール通知の動作確認)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --repo "${{ github.repository }}" \
+            --title "📧 メール通知テスト" \
+            --body "$(printf '@SonicPeak-jp これはメール通知のテストです。\nこのメールが info@sonic-peak.com に届いていれば、空き検知時の通知も正しく届きます。')"
